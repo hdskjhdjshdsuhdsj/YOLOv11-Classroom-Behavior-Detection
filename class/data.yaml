@@ -1,0 +1,9 @@
+names:
+- sleep
+- raise_head
+- using_computer
+- stand
+- using_phone
+- raise_hand
+- read
+nc: 7

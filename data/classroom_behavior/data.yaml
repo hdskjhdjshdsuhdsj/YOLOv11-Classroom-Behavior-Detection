@@ -1,0 +1,6 @@
+train: images/train
+val: C:\Users\Administrator\Desktop\DetectionProject\data\classroom_behavior\images\valid
+test: C:\Users\Administrator\Desktop\DetectionProject\data\classroom_behavior\images\test
+
+nc: 6
+names: ['Bend Over The Desk', 'Hand Under Table', 'Look Around', 'Normal', 'Stand Up', 'Wave']

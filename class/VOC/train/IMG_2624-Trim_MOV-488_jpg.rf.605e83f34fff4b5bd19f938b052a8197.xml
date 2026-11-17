@@ -1,0 +1,29 @@
+<annotation>
+	<folder></folder>
+	<filename>IMG_2624-Trim_MOV-488_jpg.rf.605e83f34fff4b5bd19f938b052a8197.jpg</filename>
+	<path>IMG_2624-Trim_MOV-488_jpg.rf.605e83f34fff4b5bd19f938b052a8197.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>raise_hand</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>227</xmin>
+			<xmax>408</xmax>
+			<ymin>166</ymin>
+			<ymax>572</ymax>
+		</bndbox>
+	</object>
+	<metadata>
+	</metadata>
+</annotation>

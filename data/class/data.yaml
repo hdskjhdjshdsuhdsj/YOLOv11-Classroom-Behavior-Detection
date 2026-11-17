@@ -1,0 +1,17 @@
+
+# 训练集 & 验证集（必须是 images）
+train: C:\Users\Administrator\Desktop\DetectionProject\data\class\images\train
+val: C:\Users\Administrator\Desktop\DetectionProject\data\class\images\valid
+test: C:\Users\Administrator\Desktop\DetectionProject\data\class\images\test
+# 类别数量
+nc: 7
+
+# 类别名称（顺序 = label 里的 class id）
+names:
+  0: sleep
+  1: raise_head
+  2: using_computer
+  3: stand
+  4: using_phone
+  5: raise_hand
+  6: read

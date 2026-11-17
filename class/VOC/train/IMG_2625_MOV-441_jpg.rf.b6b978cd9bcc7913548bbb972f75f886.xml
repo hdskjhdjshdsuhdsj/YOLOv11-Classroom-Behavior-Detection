@@ -1,0 +1,29 @@
+<annotation>
+	<folder></folder>
+	<filename>IMG_2625_MOV-441_jpg.rf.b6b978cd9bcc7913548bbb972f75f886.jpg</filename>
+	<path>IMG_2625_MOV-441_jpg.rf.b6b978cd9bcc7913548bbb972f75f886.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>sleep</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>213</xmin>
+			<xmax>309</xmax>
+			<ymin>483</ymin>
+			<ymax>599</ymax>
+		</bndbox>
+	</object>
+	<metadata>
+	</metadata>
+</annotation>

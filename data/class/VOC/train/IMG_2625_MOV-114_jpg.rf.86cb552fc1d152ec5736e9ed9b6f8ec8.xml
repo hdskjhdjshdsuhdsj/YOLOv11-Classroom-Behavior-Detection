@@ -1,0 +1,29 @@
+<annotation>
+	<folder></folder>
+	<filename>IMG_2625_MOV-114_jpg.rf.86cb552fc1d152ec5736e9ed9b6f8ec8.jpg</filename>
+	<path>IMG_2625_MOV-114_jpg.rf.86cb552fc1d152ec5736e9ed9b6f8ec8.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>raise_hand</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>332</xmin>
+			<xmax>405</xmax>
+			<ymin>369</ymin>
+			<ymax>529</ymax>
+		</bndbox>
+	</object>
+	<metadata>
+	</metadata>
+</annotation>

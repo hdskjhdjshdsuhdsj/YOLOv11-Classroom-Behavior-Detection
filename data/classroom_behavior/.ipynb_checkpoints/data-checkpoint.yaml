@@ -1,0 +1,6 @@
+train: images/train
+val: images/valid
+test: images/test
+
+nc: 6
+names: ['Bend Over The Desk', 'Hand Under Table', 'Look Around', 'Normal', 'Stand Up', 'Wave']
