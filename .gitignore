@@ -22,3 +22,11 @@ YOLOvx/runs/detect/class_50ep/weights/last.pt
 
 # agent 目录（尚未定稿，暂不入库）
 agent/
+
+# 训练数据集图片/标注（仅本地保留，不入库；仓库只留 COCO json 标注）
+class/VOC/
+class/images/
+class/labels/
+
+# 数据集压缩包（LFS，仅本地保留）
+*.rar
