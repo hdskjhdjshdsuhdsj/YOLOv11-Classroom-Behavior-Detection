@@ -1,0 +1,41 @@
+{
+  "images": [],
+  "annotations": [],
+  "categories": [
+    {
+      "id": 1,
+      "name": "sleep",
+      "supercategory": "none"
+    },
+    {
+      "id": 2,
+      "name": "raise_head",
+      "supercategory": "none"
+    },
+    {
+      "id": 3,
+      "name": "using_computer",
+      "supercategory": "none"
+    },
+    {
+      "id": 4,
+      "name": "stand",
+      "supercategory": "none"
+    },
+    {
+      "id": 5,
+      "name": "using_phone",
+      "supercategory": "none"
+    },
+    {
+      "id": 6,
+      "name": "raise_hand",
+      "supercategory": "none"
+    },
+    {
+      "id": 7,
+      "name": "read",
+      "supercategory": "none"
+    }
+  ]
+}

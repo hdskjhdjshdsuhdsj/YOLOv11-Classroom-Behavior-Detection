@@ -1,3 +1,8 @@
+train: E:/项目/DetectionProject/class/images/train
+val: E:/项目/DetectionProject/class/images/valid
+test: E:/项目/DetectionProject/class/images/test
+
+nc: 7
 names:
 - sleep
 - raise_head
@@ -6,4 +11,3 @@ names:
 - using_phone
 - raise_hand
 - read
-nc: 7

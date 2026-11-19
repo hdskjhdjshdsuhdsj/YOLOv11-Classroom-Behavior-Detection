@@ -2,3 +2,23 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# 训练缓存
+*.cache
+
+# 预训练权重（可重新下载，不入库）
+YOLOvx/yolo*.pt
+
+# 旧训练/检测批次全部产物（图表、日志、权重），仅保留 class_50ep
+YOLOvx/runs/detect/train/
+YOLOvx/runs/detect/train2/
+YOLOvx/runs/detect/train3/
+YOLOvx/runs/detect/val/
+YOLOvx/runs/detect/predict/
+YOLOvx/runs/detect/predict2/
+
+# 新模型只保留 best.pt，last.pt 是同一权重副本
+YOLOvx/runs/detect/class_50ep/weights/last.pt
+
+# agent 目录（尚未定稿，暂不入库）
+agent/
