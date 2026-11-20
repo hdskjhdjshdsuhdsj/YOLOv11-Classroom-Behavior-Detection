@@ -24,6 +24,9 @@ YOLOvx/runs/detect/class_50ep/weights/last.pt
 agent/reports/
 agent/config.local.json
 
+# agent API key（本地私有，绝不入库）
+agent/api_key.txt
+
 # 训练数据集图片/标注（仅本地保留，不入库；仓库只留 COCO json 标注）
 class/VOC/
 class/images/

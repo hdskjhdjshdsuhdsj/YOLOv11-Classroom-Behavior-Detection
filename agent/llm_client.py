@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 from collections import Counter
+from pathlib import Path
 
 
 SYSTEM_PROMPT = """你是一名课堂行为分析助手。
@@ -56,18 +57,26 @@ class LLMClient:
 
         if self.provider == "openai_compatible":
             from openai import OpenAI  # 延迟导入：mock 模式无需安装 openai 库
-            # 密钥只从环境变量读取，避免写进 config.json 被提交到公开仓库。
-            # config 里的 api_key 仅作为本地临时兜底，正常应保持为空占位。
-            api_key = os.environ.get("OPENAI_API_KEY") or cfg.get("api_key", "")
+            # 密钥读取优先级：环境变量 > 本地 api_key.txt > config.json 占位
+            # key 文件与配置同目录，已加入 .gitignore，不会被提交到仓库。
+            key_file = Path(__file__).resolve().parent / "api_key.txt"
+            file_key = ""
+            if key_file.exists():
+                file_key = key_file.read_text(encoding="utf-8").strip()
+            api_key = (
+                os.environ.get("OPENAI_API_KEY")
+                or file_key
+                or cfg.get("api_key", "")
+            )
             base_url = os.environ.get("OPENAI_BASE_URL") or cfg.get(
                 "base_url", "https://api.openai.com/v1"
             )
             if not api_key or api_key.startswith("sk-在这里"):
                 raise ValueError(
-                    "未检测到有效的 API key。请通过环境变量 OPENAI_API_KEY 提供，"
-                    "不要把密钥写进 config.json（该文件会随仓库公开）。\n"
-                    "  Windows CMD     : set OPENAI_API_KEY=你的key\n"
-                    "  Windows PowerShell: $env:OPENAI_API_KEY=\"你的key\""
+                    "未检测到有效的 API key。请把 key 写入 agent/api_key.txt（推荐，已 gitignore），"
+                    "或用环境变量 OPENAI_API_KEY 提供。\n"
+                    "  DeepSeek key 申请: https://platform.deepseek.com/api_keys\n"
+                    "  切勿把 key 填进 config.json（会随仓库公开）。"
                 )
             self.client = OpenAI(
                 base_url=base_url,

@@ -55,7 +55,20 @@ def main():
     focus = cfg.get("analysis", {}).get("focus", [])
     client = LLMClient(cfg["llm"])
     print(f"\n[*] LLM provider={client.provider}, model={client.model}")
-    report = client.analyze(detections, focus)
+    try:
+        report = client.analyze(detections, focus)
+    except Exception as exc:
+        # 把 openai 的异常转成可读提示，避免用户面对一长串堆栈
+        name = type(exc).__name__
+        if "Authentication" in name or "401" in str(exc):
+            print("\n[失败] DeepSeek 密钥无效或已过期。")
+            print("  请检查 agent/api_key.txt 里的 key 是否正确。")
+            print("  申请地址: https://platform.deepseek.com/api_keys")
+        elif "Connection" in name or "Timeout" in name or "APIConnection" in name:
+            print("\n[失败] 无法连接 DeepSeek，请检查网络或代理设置。")
+        else:
+            print(f"\n[失败] AI 分析出错: {name}: {exc}")
+        raise SystemExit(1)
 
     # 3. 输出报告
     print("\n" + "=" * 50)

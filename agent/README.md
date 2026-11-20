@@ -1,84 +1,74 @@
-# 课堂行为检测 + LLM 分析 Agent
+# 课堂行为检测 + DeepSeek AI 分析 Agent
 
-在原有 YOLO 检测项目基础上，增加一层 AI 分析：检测结果 → 大模型 → 中文行为分析报告。
+YOLO 检测课堂行为 → 组装结构化 prompt → DeepSeek 大模型 → 中文行为分析报告。
 
 ## 文件结构
 
 ```
 agent/
-├── config.json        # 配置：选后端、填 key、填权重路径、调阈值
+├── config.json        # 配置：DeepSeek 接口、模型、检测阈值
+├── api_key.txt        # 【本地私有】DeepSeek 密钥，已 gitignore，绝不入库
+├── 运行分析.bat       # 一键启动（把图片拖上去即可）
 ├── detector.py        # YOLO 检测层：图片 → 行为列表
 ├── llm_client.py      # AI 层：行为列表 → 中文分析报告
 ├── main.py            # 命令行入口
 └── requirements.txt   # 依赖
 ```
 
-## 安装依赖
+## 快速开始（3 步）
+
+**第 1 步：申请 DeepSeek 密钥**
+
+打开 https://platform.deepseek.com/api_keys 注册并创建 API key（按量计费，极便宜，新用户有免费额度）。
+
+**第 2 步：填入密钥**
+
+用记事本打开 `agent/api_key.txt`，把里面的占位文字替换成你的 key（`sk-` 开头），保存。
+这个文件已加入 `.gitignore`，不会被提交到 GitHub。
+
+**第 3 步：运行**
+
+- **最简单**：把一张图片直接拖到 `运行分析.bat` 上，自动检测 + AI 分析 + 保存报告。
+- 或命令行：
+  ```bash
+  cd agent
+  C:\ProgramData\anaconda3\python.exe main.py --image path/to/photo.jpg --save
+  ```
+
+报告会打印在终端，并用 `--save` 存到 `reports/` 目录。
+
+## 其他运行方式
 
 ```bash
-pip install -r requirements.txt
-```
-
-（ultralytics 会自动带上 torch / opencv，首次安装较大）
-
-## 三种运行方式
-
-**1. 跑通链路（不联网、不需要权重）——先跑这个验证**
-```bash
+# 不联网，用假数据跑通链路（验证代码用，不需要 key）
 python main.py --mock
-```
-用内置假数据，会把实际发给 LLM 的 prompt 完整打印出来，并返回模拟分析报告。
 
-**2. 只检测，不调用 AI**
-```bash
+# 只检测不调用 AI
 python main.py --image path/to/photo.jpg --no-llm
 ```
-默认已指向新训练的 7 类模型 `../YOLOvx/runs/detect/class_50ep/weights/best.pt`，无需额外放置权重。
 
-**3. 完整链路：检测 + AI 分析（当前 LLM 为 mock，返回模拟报告）**
-```bash
-python main.py --image path/to/photo.jpg --save
-```
-`--save` 会把报告存到 `reports/` 目录。
+> 注意：anaconda 的 Python 缺 SSL 路径，**必须**先执行
+> `set PATH=C:\ProgramData\anaconda3\Library\bin;%PATH%`（bat 脚本已自动处理）。
+> 手动在命令行跑时记得加这句，否则调 API 会报 SSL 错误。
 
-> 用 anaconda 环境运行：`C:\ProgramData\anaconda3\python.exe main.py ...`（该环境已装 ultralytics；mock 模式不需要 openai 库）。代码兼容 Python 3.8。
+## 配置说明
 
-## 切换 LLM 后端
+`config.json` 已预置 DeepSeek：
 
-改 `config.json` 的 `llm.provider`：
+- `base_url`: `https://api.deepseek.com/v1`
+- `model`: `deepseek-chat`（省钱，够用）；想要更强推理可换 `deepseek-reasoner`
+- `provider`: `openai_compatible`；改回 `mock` 则不联网只测试
 
-- `mock`：不联网，仅测试
-- `openai_compatible`：任何 OpenAI 格式的接口，填好 `base_url` / `model` 即可。
-  - 官方 OpenAI：`https://api.openai.com/v1`
-  - 中转站 / Ollama / vLLM：换成对应地址（Ollama 一般是 `http://localhost:11434/v1`）
-
-> 注意：`D:\DEEPSEEK` 那套是 QQ 机器人的私有网关，不是 OpenAI 兼容接口，不能直接填 here。
-
-## API 密钥安全（重要）
-
-**密钥绝不写进 `config.json`**——该文件会随仓库公开。仓库里的 `api_key` 恒为空。
-运行时通过环境变量提供，代码优先读取环境变量：
-
-```bash
-# Windows CMD
-set OPENAI_API_KEY=你的key
-# Windows PowerShell
-$env:OPENAI_API_KEY="你的key"
-```
-
-也可以设置 `OPENAI_BASE_URL` 覆盖接口地址。若两者都缺且 provider 为 `openai_compatible`，
-程序会直接报错并提示，不会用空 key 悄悄联网。想在本地长期保存又不入库，可新建
-`config.local.json`（已加入 `.gitignore`）。
+密钥读取优先级：**环境变量 `OPENAI_API_KEY` > `api_key.txt` > config.json 占位**。
+换其他 OpenAI 兼容接口（通义、Kimi、中转站等）只需改 `base_url` 和 `model`。
 
 ## 权重与类别
 
-`config.json` 的 `detector.weights` 默认指向已训练好的 7 类模型：`../YOLOvx/runs/detect/class_50ep/weights/best.pt`（相对 agent 目录）。
-类别名自动从权重读取，共 7 类：`sleep / raise_head / using_computer / stand / using_phone / raise_hand / read`。
-换模型只需改 `detector.weights` 路径，不用改代码。
+`detector.weights` 默认指向 7 类模型 `../YOLOvx/runs/detect/class_50ep/weights/best.pt`（相对 agent 目录）。
+类别：`sleep / raise_head / using_computer / stand / using_phone / raise_hand / read`。
+换模型只改路径，不改代码。
 
-## 接入真实 LLM（可选）
+## 安全提醒
 
-目前 `llm.provider = mock`，返回模拟报告且会把真实 prompt 打印出来供检查。
-拿到任何 OpenAI 兼容接口后，把 `config.json` 的 provider 改为 `openai_compatible`、
-填好 `base_url` / `model`，并用**环境变量**提供密钥（见上一节），安装 `pip install openai`
-（mock 模式不需要），即可输出真实 AI 分析报告。
+`api_key.txt` 和 `config.local.json` 已在 `.gitignore` 中，**永远不要**把真实 key 写进
+`config.json` 或任何会提交到仓库的文件。密钥只放本地文件或用环境变量提供。
