@@ -1,0 +1,25 @@
+{
+  "llm": {
+    "provider": "mock",
+    "base_url": "https://api.openai.com/v1",
+    "api_key": "",
+    "model": "gpt-4o-mini",
+    "temperature": 0.3,
+    "max_tokens": 1024,
+    "timeout": 60,
+    "_note": "provider: openai_compatible=任何兼容OpenAI格式的接口 | mock=不联网仅测试。base_url填接口地址。api_key留空,改用环境变量OPENAI_API_KEY提供,切勿填入提交到仓库!"
+  },
+  "detector": {
+    "weights": "../YOLOvx/runs/detect/class_50ep/weights/best.pt",
+    "conf": 0.25,
+    "iou": 0.45,
+    "imgsz": 640,
+    "device": "",
+    "_note": "_weights填训练好的YOLO权重路径(相对agent目录);conf置信度阈值;device留空自动(有GPU用GPU)"
+  },
+  "analysis": {
+    "focus": ["using_phone", "sleep", "stand", "raise_head"],
+    "_note": "异常行为类别,对应模型7类:sleep/raise_head/using_computer/stand/using_phone/raise_hand/read",
+    "language": "zh"
+  }
+}
