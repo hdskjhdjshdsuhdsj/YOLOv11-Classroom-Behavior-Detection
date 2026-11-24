@@ -71,7 +71,12 @@ class LLMClient:
             base_url = os.environ.get("OPENAI_BASE_URL") or cfg.get(
                 "base_url", "https://api.openai.com/v1"
             )
-            if not api_key or api_key.startswith("sk-在这里"):
+            if (
+                not api_key
+                or any(ord(c) > 127 for c in api_key)   # 中文占位符（如"在这里粘贴你的DeepSeek密钥"）不是合法 key
+                or "在这里" in api_key
+                or api_key.startswith("sk-在这里")
+            ):
                 raise ValueError(
                     "未检测到有效的 API key。请把 key 写入 agent/api_key.txt（推荐，已 gitignore），"
                     "或用环境变量 OPENAI_API_KEY 提供。\n"

@@ -6,17 +6,63 @@
 import sys
 import os
 import cv2
+import json
 from datetime import datetime
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QSlider, QFileDialog, QMessageBox,
     QGroupBox, QFrame, QScrollArea, QSizePolicy, QStatusBar,
+    QTextBrowser,
 )
-from PyQt5.QtCore import Qt, QTimer, pyqtSlot
+from PyQt5.QtCore import Qt, QTimer, pyqtSlot, QThread, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QFont, QColor, QPalette
 
 from ultralytics import YOLO
+
+# ---- 引入 agent 的 LLM 分析层（YOLOvx 与 agent 是兄弟目录）----
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(BASE_DIR)
+AGENT_DIR = os.path.join(PROJECT_DIR, "agent")
+if AGENT_DIR not in sys.path:
+    sys.path.insert(0, AGENT_DIR)
+
+
+class AiWorker(QThread):
+    """后台线程调用 LLM，避免联网分析时卡死界面。"""
+    done = pyqtSignal(str, object)   # (报告文本, 错误对象或 None)
+
+    def __init__(self, client, detections, focus):
+        super().__init__()
+        self.client = client
+        self.detections = detections
+        self.focus = focus
+
+    def run(self):
+        try:
+            report = self.client.analyze(self.detections, self.focus)
+            self.done.emit(report, None)
+        except Exception as e:
+            self.done.emit("", e)
+
+
+def _build_llm_client():
+    """读 agent/config.json 构造分析客户端；key 缺失时自动降级 mock，保证界面不崩。"""
+    from llm_client import LLMClient
+    cfg_path = os.path.join(AGENT_DIR, "config.json")
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+    llm_cfg = dict(cfg.get("llm", {}))
+    focus = cfg.get("analysis", {}).get("focus", [])
+    try:
+        client = LLMClient(llm_cfg)
+        mode = client.provider
+    except Exception:
+        # 没填 key / 网络库缺失 → 退回 mock 演示模式
+        llm_cfg["provider"] = "mock"
+        client = LLMClient(llm_cfg)
+        mode = "mock(演示：未配置 key，可在 agent/api_key.txt 填入 DeepSeek key)"
+    return client, focus, mode
 
 # ==================== 配置 ====================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -80,6 +126,14 @@ class MainWindow(QMainWindow):
         self.mode = None           # 'camera' / 'video'
         self.frame_count = 0
         self.last_saved = ""
+        self.last_detections = []  # 最近一帧的结构化检测结果，供 AI 分析
+        self.ai_worker = None
+
+        # 初始化 AI 分析客户端（有 key 用 DeepSeek，无 key 自动 mock）
+        try:
+            self.llm, self.focus, self.llm_mode = _build_llm_client()
+        except Exception as e:
+            self.llm, self.focus, self.llm_mode = None, [], "初始化失败: %s" % e
 
         self._build_ui()
 
@@ -164,6 +218,16 @@ class MainWindow(QMainWindow):
         self.btn_save = QPushButton("保存当前画面")
         self.btn_save.clicked.connect(self.save_frame)
         lv.addWidget(self.btn_save)
+
+        # --- AI 分析 ---
+        self.btn_ai = QPushButton("AI 分析当前画面")
+        self.btn_ai.setObjectName("primary")
+        self.btn_ai.clicked.connect(self.ai_analyze)
+        lv.addWidget(self.btn_ai)
+        self.ai_status = QLabel("AI: %s" % self.llm_mode)
+        self.ai_status.setWordWrap(True)
+        self.ai_status.setStyleSheet("color:#7F8C8D; font-size:10px;")
+        lv.addWidget(self.ai_status)
         lv.addStretch()
         root.addWidget(left)
 
@@ -209,6 +273,23 @@ class MainWindow(QMainWindow):
         scroll.setWidget(self.log_label)
         bl.addWidget(scroll)
         right.addWidget(bottom, stretch=1)
+
+        # --- AI 分析报告 ---
+        report_box = QFrame()
+        report_box.setStyleSheet("QFrame { background:#FFFFFF; border-radius:10px; }")
+        rl = QVBoxLayout(report_box)
+        rl.setContentsMargins(12, 10, 12, 10)
+        report_title = QLabel("AI 分析报告（DeepSeek / 演示）")
+        report_title.setFont(QFont("Microsoft YaHei", 11, QFont.Bold))
+        rl.addWidget(report_title)
+        self.report_browser = QTextBrowser()
+        self.report_browser.setOpenExternalLinks(True)
+        self.report_browser.setPlaceholderText("点击左侧「AI 分析当前画面」生成分析报告...")
+        self.report_browser.setStyleSheet(
+            "QTextBrowser { background:#FFFFFF; border:1px solid #D8DEE9; border-radius:6px; font-size:12px; }"
+        )
+        rl.addWidget(self.report_browser)
+        right.addWidget(report_box, stretch=1)
 
         root.addLayout(right, stretch=1)
         self.setStatusBar(QStatusBar())
@@ -327,13 +408,23 @@ class MainWindow(QMainWindow):
             pix.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
 
-        # 统计
+        # 统计 + 结构化结果（供 AI 分析）
         counts = {}
+        detections = []
         if result.boxes is not None and len(result.boxes) > 0:
             for box in result.boxes:
                 cls_id = int(box.cls[0])
                 en = result.names.get(cls_id, str(cls_id))
                 counts[en] = counts.get(en, 0) + 1
+                conf = round(float(box.conf[0]), 3)
+                bbox = [round(float(v), 1) for v in box.xyxy[0].tolist()]
+                detections.append({
+                    "class": en,
+                    "class_id": cls_id,
+                    "confidence": conf,
+                    "bbox": bbox,
+                })
+        self.last_detections = detections
         if counts:
             parts = []
             for en, n in counts.items():
@@ -356,8 +447,46 @@ class MainWindow(QMainWindow):
             cv2.imwrite(path, self.current_frame)
             self.log("已保存: %s" % os.path.basename(path))
 
+    def ai_analyze(self):
+        """手动触发：把当前画面的检测结果交给 LLM 生成分析报告。"""
+        if self.llm is None:
+            QMessageBox.warning(self, "提示", "AI 分析层初始化失败，无法分析")
+            return
+        if self.ai_worker is not None and self.ai_worker.isRunning():
+            QMessageBox.information(self, "提示", "上一次分析还在进行中，请稍候")
+            return
+        if not self.last_detections:
+            QMessageBox.information(self, "提示", "当前画面没有检测结果，请先做一次检测再分析")
+            return
+
+        self.btn_ai.setEnabled(False)
+        self.btn_ai.setText("AI 分析中...")
+        self.report_browser.setPlainText("正在分析 %d 个检测目标，请稍候..." % len(self.last_detections))
+        self.log("提交 AI 分析：%d 个检测目标（%s）" % (len(self.last_detections), self.llm_mode))
+        self.statusBar().showMessage("AI 分析中...")
+
+        self.ai_worker = AiWorker(self.llm, list(self.last_detections), list(self.focus))
+        self.ai_worker.done.connect(self._on_ai_done)
+        self.ai_worker.start()
+
+    @pyqtSlot(str, object)
+    def _on_ai_done(self, report, err):
+        self.btn_ai.setEnabled(True)
+        self.btn_ai.setText("AI 分析当前画面")
+        if err is not None:
+            self.report_browser.setPlainText("分析失败：\n%s" % err)
+            self.log("AI 分析失败: %s" % err)
+            self.statusBar().showMessage("AI 分析失败")
+            QMessageBox.warning(self, "AI 分析失败", str(err))
+            return
+        self.report_browser.setPlainText(report)
+        self.log("AI 分析完成，报告已生成")
+        self.statusBar().showMessage("AI 分析完成")
+
     def closeEvent(self, event):
         self.stop_all()
+        if self.ai_worker is not None and self.ai_worker.isRunning():
+            self.ai_worker.wait()
         event.accept()
 
 

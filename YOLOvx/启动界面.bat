@@ -2,6 +2,7 @@
 cd /d "%~dp0"
 echo Starting YOLOv11 Classroom Behavior Detection UI...
 echo.
+set PATH=C:/ProgramData/anaconda3/Library/bin;%PATH%
 "C:/ProgramData/anaconda3/python.exe" ui_main.py
 if errorlevel 1 (
 echo.
